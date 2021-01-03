@@ -5,14 +5,22 @@ using namespace Microsoft.PowerShell.Commands
 #requires -Modules @{ModuleName = 'Pester'; ModuleVersion = '5.1.1'}
 
 BeforeAll {
-    Import-Module $PSScriptRoot/../Dependency.psd1 -Force
+    $ModuleUnderTest = Import-Module $PSScriptRoot/../Dependency.psd1 -Force -PassThru
 }
 
 
 Describe "Find-PSArtifactModule" {
 
     BeforeAll {
-        Mock Find-Module -ParameterFilter {$Name -eq $Spec.Name; $Repository -eq $MockRepository} -ModuleName Dependency {
+        $MockRepository = "MockGallery"
+
+        $MockSplat = @{
+            CommandName     = "Find-Module"
+            ParameterFilter = {$Name -eq $Spec.Name; $Repository -eq $MockRepository}
+            ModuleName      = $ModuleUnderTest
+        }
+
+        Mock @MockSplat {
             $MockFoo = Import-Clixml $PSScriptRoot/PSArtifactModule.TestData.clixml
             return $MockFoo
         }
@@ -20,7 +28,6 @@ Describe "Find-PSArtifactModule" {
 
     BeforeEach {
         $Spec = [ModuleSpecification]"foo"
-        $MockRepository = "MockGallery"
         $Result = Find-PSArtifactModule $Spec -Repository $MockRepository
     }
 
@@ -33,6 +40,19 @@ Describe "Find-PSArtifactModule" {
     }
 
     It "Lets you choose the repository" {
-        Assert-MockCalled Find-Module -ParameterFilter {$Name -eq $Spec.Name; $Repository -eq $MockRepository} -ModuleName Dependency
+        & $ModuleUnderTest {Remove-Variable RepositoryCache -Scope Script -ErrorAction SilentlyContinue}
+
+        Find-PSArtifactModule $Spec -Repository $MockRepository
+
+        Assert-MockCalled @MockSplat
+    }
+
+    It "Caches" {
+        & $ModuleUnderTest {Remove-Variable RepositoryCache -Scope Script -ErrorAction SilentlyContinue}
+
+        Find-PSArtifactModule $Spec -Repository $MockRepository
+        Find-PSArtifactModule $Spec -Repository $MockRepository
+
+        Assert-MockCalled @MockSplat -Times 1 -Exactly
     }
 }

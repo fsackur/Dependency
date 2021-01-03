@@ -1,3 +1,6 @@
+using namespace Microsoft.PowerShell.Commands
+using module Classes/DependencyModule.psm1
+
 function Find-PSArtifactModule
 {
     <#
@@ -15,15 +18,23 @@ function Find-PSArtifactModule
         [ModuleSpecification]$Spec
     )
 
+    begin
+    {
+        if (-not $Script:RepositoryCache)
+        {
+            $Script:RepositoryCache = @{}
+        }
+    }
+
     process
     {
-        $SpecSplat = @{
-            Name            = $Spec.Name
-            MinimumVersion  = $Spec.Version
-            RequiredVersion = $Spec.RequiredVersion
-            MaximumVersion  = $Spec.MaximumVersion
+        if ($Script:RepositoryCache[$Spec.Name])
+        {
+            return $Script:RepositoryCache[$Spec.Name]
         }
 
-        PowerShellGet\Find-Module @SpecSplat -Repository $Repository
+        $FoundModules = Find-Module $Spec.Name -Repository $Repository -AllVersions
+
+        return $Script:RepositoryCache[$Spec.Name] = $FoundModules
     }
 }
