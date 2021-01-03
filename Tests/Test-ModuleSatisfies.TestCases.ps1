@@ -15,9 +15,17 @@
 (@{Name = "bar"; Version = "1.2.3"},     @{ModuleName = "foo"; ModuleVersion = "1.2.3"; MaximumVersion = "1.9.9"},   $false) |
 
     ForEach-Object {
+
+        $Module, $Spec, $Expected = $_
+
+        $ModuleName = if ($Module.Name) {$Module.Name, $Module.Version -join " "} else {$Module}
+        $ModuleName = $ModuleName.Trim()
+        $Name = "{0} {1}" -f $(if ($Expected) {"passes"} else {"fails"}), $ModuleName
+
         @{
-            Module = $_[0]
-            Spec = $_[1]
-            Expected = $_[2]
+            Name     = $Name
+            Module   = $Module
+            Spec     = $Spec
+            Expected = $Expected
         }
     }
