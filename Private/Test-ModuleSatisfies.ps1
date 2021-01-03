@@ -35,6 +35,10 @@ function Test-ModuleSatisfies
             return $false
         }
 
+        if ($Spec.MaximumVersion -and $Module.Version -gt $Spec.MaximumVersion)
+        {
+            return $false
+        }
 
         return $true
     }
