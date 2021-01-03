@@ -30,6 +30,11 @@ function Test-ModuleSatisfies
             return $false
         }
 
+        if ($Spec.Version -and $Module.Version -lt $Spec.Version)
+        {
+            return $false
+        }
+
 
         return $true
     }
