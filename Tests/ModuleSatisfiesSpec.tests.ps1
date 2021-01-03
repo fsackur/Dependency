@@ -12,60 +12,74 @@ BeforeAll {
 
 Describe "We know when modules satisfy specifications" {
 
-    Context "Name-only spec" {
+    $ModuleName = if ($Module.Name) {$Module.Name, $Module.Version -join " "} else {$Module}
+    $Name = "{0} {1}" -f $(if ($Expected) {"passes"} else {"fails"}), $ModuleName
 
-        BeforeAll {
-            $Spec = [ModuleSpecification]"foo"
-        }
-
-        It "Passes foo" {
-            "foo" | Test-ModuleSatisfies $Spec | Should -Be $true
-        }
-
-        It "Fails bar" {
-            "bar" | Test-ModuleSatisfies $Spec | Should -Be $false
-        }
+    It $Name {
+        $Module | Test-ModuleSatisfies $Spec | Should -Be $Expected
     }
 
-    Context "RequiredVersion spec" {
+} -ForEach @(
+    @{
+        Module = @{Name = "foo"}
+        Spec = "foo"
+        Expected = $true
+    },
+    @{
+        Module = @{Name = "bar"}
+        Spec = "foo"
+        Expected = $false
+    },
 
-        BeforeAll {
-            $Spec = [ModuleSpecification]@{ModuleName = "foo"; RequiredVersion = "1.2.3"}
-        }
+    @{
+        Module = @{Name = "foo"; Version = "0.1.2"}
+        Spec = @{ModuleName = "foo"; RequiredVersion = "1.2.3"}
+        Expected = $false
+    },
+    @{
+        Module = @{Name = "foo"; Version = "1.2.3"}
+        Spec = @{ModuleName = "foo"; RequiredVersion = "1.2.3"}
+        Expected = $true
+    },
+    @{
+        Module = @{Name = "foo"; Version = "2.3.4"}
+        Spec = @{ModuleName = "foo"; RequiredVersion = "1.2.3"}
+        Expected = $false
+    },
+    @{
+        Module = @{Name = "bar"; Version = "1.2.3"}
+        Spec = @{ModuleName = "foo"; RequiredVersion = "1.2.3"}
+        Expected = $false
+    },
 
-        It "Passes foo 1.2.3" {
-            @{Name = "foo"; Version = "1.2.3"} | Test-ModuleSatisfies $Spec | Should -Be $true
-        }
-
-        It "Fails foo 2.3.4" {
-            @{Name = "foo"; Version = "2.3.4"} | Test-ModuleSatisfies $Spec | Should -Be $false
-        }
-
-        It "Fails bar 1.2.3" {
-            @{Name = "bar"; Version = "1.2.3"} | Test-ModuleSatisfies $Spec | Should -Be $false
-        }
+    @{
+        Module = @{Name = "foo"; Version = "0.1.2"}
+        Spec = @{ModuleName = "foo"; ModuleVersion = "1.2.3"; MaximumVersion = "1.9.9"}
+        Expected = $false
+    },
+    @{
+        Module = @{Name = "foo"; Version = "1.2.3"}
+        Spec = @{ModuleName = "foo"; ModuleVersion = "1.2.3"; MaximumVersion = "1.9.9"}
+        Expected = $true
+    },
+    @{
+        Module = @{Name = "foo"; Version = "1.8.8"}
+        Spec = @{ModuleName = "foo"; ModuleVersion = "1.2.3"; MaximumVersion = "1.9.9"}
+        Expected = $true
+    },
+    @{
+        Module = @{Name = "foo"; Version = "1.9.9"}
+        Spec = @{ModuleName = "foo"; ModuleVersion = "1.2.3"; MaximumVersion = "1.9.9"}
+        Expected = $true
+    },
+    @{
+        Module = @{Name = "foo"; Version = "2.3.4"}
+        Spec = @{ModuleName = "foo"; ModuleVersion = "1.2.3"; MaximumVersion = "1.9.9"}
+        Expected = $false
+    },
+    @{
+        Module = @{Name = "bar"; Version = "1.2.3"}
+        Spec = @{ModuleName = "foo"; ModuleVersion = "1.2.3"; MaximumVersion = "1.9.9"}
+        Expected = $false
     }
-
-    Context "Version spec" {
-
-        BeforeAll {
-            $Spec = [ModuleSpecification]@{ModuleName = "foo"; ModuleVersion = "1.2.3"}
-        }
-
-        It "Passes foo 1.2.3" {
-            @{Name = "foo"; Version = "1.2.3"} | Test-ModuleSatisfies $Spec | Should -Be $true
-        }
-
-        It "Passes foo 2.3.4" {
-            @{Name = "foo"; Version = "2.3.4"} | Test-ModuleSatisfies $Spec | Should -Be $true
-        }
-
-        It "Fails foo 0.1.2" {
-            @{Name = "foo"; Version = "0.1.2"} | Test-ModuleSatisfies $Spec | Should -Be $false
-        }
-
-        It "Fails bar 1.2.3"  {
-            @{Name = "bar"; Version = "1.2.3"} | Test-ModuleSatisfies $Spec | Should -Be $false
-        }
-    }
-}
+)
