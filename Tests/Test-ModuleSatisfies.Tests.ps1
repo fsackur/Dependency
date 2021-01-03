@@ -10,7 +10,7 @@ BeforeAll {
 }
 
 
-Describe "We know when modules satisfy specifications" {
+Describe "Test-ModuleSatisfies" {
 
     $ModuleName = if ($Module.Name) {$Module.Name, $Module.Version -join " "} else {$Module}
     $Name = "{0} {1}" -f $(if ($Expected) {"passes"} else {"fails"}), $ModuleName
