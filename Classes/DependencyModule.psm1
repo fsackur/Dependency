@@ -24,6 +24,27 @@ class DependencyModule
         }
     }
 
+    DependencyModule ([psobject]$InputObject)
+    {
+        # Type converter from psobject
+        $this.PSObject.Properties | ForEach-Object {
+            $_.Value = $InputObject.$($_.Name)
+        }
+
+        if ($InputObject.PSTypeNames -contains 'Microsoft.PowerShell.Commands.PSRepositoryItemInfo')
+        {
+            $this.RequiredModules = [List[ModuleSpecification]]::new($InputObject.Dependencies.Count)
+            $InputObject.Dependencies | ForEach-Object {
+                $Spec = @{}
+                $Spec.ModuleName = $_.Name
+                if ($_.MinimumVersion)  {$Spec.ModuleVersion = $_.MinimumVersion}
+                if ($_.RequiredVersion) {$Spec.RequiredVersion = $_.RequiredVersion}
+                if ($_.MaximumVersion)  {$Spec.MaximumVersion = $_.MaximumVersion}
+                $this.RequiredModules.Add($Spec)
+            }
+        }
+    }
+
     [ValidateNotNullOrEmpty()][string]$Name
     [version]$Version
     [IList[ModuleSpecification]]$RequiredModules

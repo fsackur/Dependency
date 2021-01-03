@@ -8,6 +8,7 @@ function Find-PSArtifactModule
         Finds a module from an artifact repo, such as the PSGallery, that satisfies a specification.
     #>
 
+    [OutputType([DependencyModule])]
     [CmdletBinding()]
     param
     (
@@ -33,7 +34,7 @@ function Find-PSArtifactModule
             return $Script:RepositoryCache[$Spec.Name]
         }
 
-        $FoundModules = Find-Module $Spec.Name -Repository $Repository -AllVersions
+        [DependencyModule[]]$FoundModules = Find-Module $Spec.Name -Repository $Repository -AllVersions
 
         return $Script:RepositoryCache[$Spec.Name] = $FoundModules
     }
