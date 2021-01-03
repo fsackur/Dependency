@@ -18,3 +18,13 @@ Describe "Test-ModuleSatisfies" {
     }
 
 } -ForEach $TestCases
+
+
+Describe "Where-ModuleSatisfies" {
+
+    It $Name {
+        $IfExpectedToPass = $Expected
+        $Module | Where-ModuleSatisfies $Spec | Should -Not:$IfExpectedToPass -BeNull
+    }
+
+} -ForEach $TestCases
