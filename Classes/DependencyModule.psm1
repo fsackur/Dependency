@@ -7,15 +7,12 @@ class DependencyModule
     #region Constructors and type converters
     DependencyModule ([string]$Name)
     {
-        $this.Name = $Name
-        $this.RequiredModules = [List[ModuleSpecification]]::new()
+        $this.InitializeFrom([pscustomobject]$PSBoundParameters)
     }
 
     DependencyModule ([string]$Name, [version]$Version, [IList[ModuleSpecification]]$RequiredModules)
     {
-        $this.Name = $Name
-        $this.Version = $Version
-        $this.RequiredModules = [List[ModuleSpecification]]::new($RequiredModules)
+        $this.InitializeFrom([pscustomobject]$PSBoundParameters)
     }
 
     # Type converter from hashtable
@@ -67,9 +64,12 @@ class DependencyModule
             }
 
         $this.RequiredModules = [List[ModuleSpecification]]::new()
-        $InputObject.RequiredModules | ForEach-Object {
-            $this.RequiredModules.Add($_)
+        if ($InputObject.RequiredModules)
+        {
+            $InputObject.RequiredModules | ForEach-Object {$this.RequiredModules.Add($_)}
         }
+
+        $this.Imports = [List[DependencyModule]]::new()
     }
     #endregion Constructors and type converters
 
