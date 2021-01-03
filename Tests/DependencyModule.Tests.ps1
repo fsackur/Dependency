@@ -34,4 +34,29 @@ Describe "DependencyModule class" {
         @{Name = "PSModule";         Module = Get-Module PowerShellGet -ListAvailable | Select-Object -First 1},
         @{Name = "PSRepositoryItem"; Module = Import-Clixml $PSScriptRoot/PSArtifactModule.TestData.clixml}
     )
+
+    Context "Tree structure" {
+
+        $foo = [DependencyModule]@{
+            Name = "foo"
+            Version = "1.2.3"
+            RequiredModules = @{ModuleName = "bar"; ModuleVersion = "1.2.3"}
+        }
+        $bar = [DependencyModule]@{
+            Name = "bar"
+            Version = "1.2.3"
+            RequiredModules = @{ModuleName = "baz"; ModuleVersion = "1.2.3"}
+        }
+        $baz = [DependencyModule]@{
+            Name = "baz"
+            Version = "1.2.3"
+            RequiredModules = $null
+        }
+        $foo.Imports.Add($bar)
+        $bar.ImportedBy = $foo
+        $bar.Imports.Add($baz)
+        $baz.ImportedBy = $bar
+
+        $baz.GetDepth() | Should -Be 2
+    }
 }

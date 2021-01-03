@@ -77,4 +77,14 @@ class DependencyModule
     [ValidateNotNullOrEmpty()][string]$Name
     [version]$Version
     [IList[ModuleSpecification]]$RequiredModules
+
+    [DependencyModule]$ImportedBy
+    [IList[DependencyModule]]$Imports
+
+    # Methods
+    [int] GetDepth()
+    {
+        if (-not $this.ImportedBy) {return 0}
+        return $this.ImportedBy.GetDepth() + 1
+    }
 }
