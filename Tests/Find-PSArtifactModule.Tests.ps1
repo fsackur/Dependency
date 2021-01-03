@@ -26,33 +26,46 @@ Describe "Find-PSArtifactModule" {
         }
     }
 
-    BeforeEach {
-        $Spec = [ModuleSpecification]"foo"
-        $Result = Find-PSArtifactModule $Spec -Repository $MockRepository
-    }
 
-    It "Finds foo" {
-        $Result | Should -Not -BeNullOrEmpty
-    }
+    Context "Basics" {
+        It "Lets you choose the repository" {
+            & $ModuleUnderTest {Remove-Variable RepositoryCache -Scope Script -ErrorAction SilentlyContinue}
 
-    It "Finds only foo" {
-        $Result | Where-Object {$_.Name -ne $Spec.Name} | Should -BeNullOrEmpty
-    }
+            Find-PSArtifactModule $Spec -Repository $MockRepository
 
-    It "Lets you choose the repository" {
-        & $ModuleUnderTest {Remove-Variable RepositoryCache -Scope Script -ErrorAction SilentlyContinue}
+            Assert-MockCalled @MockSplat
+        }
 
-        Find-PSArtifactModule $Spec -Repository $MockRepository
+        It "Caches" {
+            & $ModuleUnderTest {Remove-Variable RepositoryCache -Scope Script -ErrorAction SilentlyContinue}
 
-        Assert-MockCalled @MockSplat
-    }
+            Find-PSArtifactModule $Spec -Repository $MockRepository
+            Find-PSArtifactModule $Spec -Repository $MockRepository
 
-    It "Caches" {
-        & $ModuleUnderTest {Remove-Variable RepositoryCache -Scope Script -ErrorAction SilentlyContinue}
+            Assert-MockCalled @MockSplat -Times 1 -Exactly
+        }
 
-        Find-PSArtifactModule $Spec -Repository $MockRepository
-        Find-PSArtifactModule $Spec -Repository $MockRepository
+    } -Foreach (
+        @{Spec = [ModuleSpecification]"foo"}
+    )
 
-        Assert-MockCalled @MockSplat -Times 1 -Exactly
-    }
+
+    Context "Finding by spec" {
+
+        BeforeEach {
+            $Result = Find-PSArtifactModule $Spec -Repository $MockRepository
+        }
+
+        It "Finds matching modules" {
+            $Result.Count | Should -Be $ExpectedCount
+        }
+
+        It "Finds only matching modules" {
+            $Result | Where-Object {$_.Name -ne $Spec.Name} | Should -BeNullOrEmpty
+        }
+
+    } -Foreach (
+        @{Spec = [ModuleSpecification]"foo"; ExpectedCount = 1},
+        @{Spec = [ModuleSpecification]@{ModuleName = "foo"; ModuleVersion = "1.2.3"}; ExpectedCount = 1}
+    )
 }
