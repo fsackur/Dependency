@@ -29,13 +29,12 @@ function Find-PSArtifactModule
 
     process
     {
-        if ($Script:RepositoryCache[$Spec.Name])
+        if (-not $Script:RepositoryCache.ContainsKey($Spec.Name))
         {
-            return $Script:RepositoryCache[$Spec.Name]
+            [DependencyModule[]]$FoundModules = Find-Module $Spec.Name -Repository $Repository -AllVersions
+            $Script:RepositoryCache[$Spec.Name] = $FoundModules
         }
 
-        [DependencyModule[]]$FoundModules = Find-Module $Spec.Name -Repository $Repository -AllVersions
-
-        return $Script:RepositoryCache[$Spec.Name] = $FoundModules
+        $Script:RepositoryCache[$Spec.Name] | Where-ModuleSatisfies $Spec
     }
 }

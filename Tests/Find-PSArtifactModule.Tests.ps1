@@ -21,8 +21,14 @@ Describe "Find-PSArtifactModule" {
         }
 
         Mock @MockSplat {
-            $MockFoo = Import-Clixml $PSScriptRoot/PSArtifactModule.TestData.clixml
-            return $MockFoo
+            "0.1.2", "1.2.3", "2.3.4", "3.4.5" |
+                ForEach-Object {[version]$_} |
+                Sort-Object -Descending |
+                ForEach-Object {
+                    $MockFoo = Import-Clixml $PSScriptRoot/PSArtifactModule.TestData.clixml
+                    $MockFoo.Version = $_
+                    $MockFoo
+                }
         }
     }
 
@@ -65,7 +71,9 @@ Describe "Find-PSArtifactModule" {
         }
 
     } -Foreach (
-        @{Spec = [ModuleSpecification]"foo"; ExpectedCount = 1},
-        @{Spec = [ModuleSpecification]@{ModuleName = "foo"; ModuleVersion = "1.2.3"}; ExpectedCount = 1}
+        @{Spec = [ModuleSpecification]"foo"; ExpectedCount = 4},
+        @{Spec = [ModuleSpecification]@{ModuleName = "foo"; ModuleVersion = "1.2.3"}; ExpectedCount = 3},
+        @{Spec = [ModuleSpecification]@{ModuleName = "foo"; RequiredVersion = "1.2.3"}; ExpectedCount = 1},
+        @{Spec = [ModuleSpecification]@{ModuleName = "foo"; ModuleVersion = "1.2.3"; MaximumVersion = "2.5"}; ExpectedCount = 2}
     )
 }
