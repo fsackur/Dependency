@@ -1,5 +1,5 @@
 using namespace Microsoft.PowerShell.Commands
-
+using module Classes/DependencyModule.psm1
 
 function Test-ModuleSatisfies
 {
@@ -12,7 +12,7 @@ function Test-ModuleSatisfies
     param
     (
         [Parameter(Mandatory, ValueFromPipeline)]
-        [string]$Module,
+        [DependencyModule]$Module,
 
         [Parameter(Mandatory, Position=1)]
         [ModuleSpecification]$Spec
@@ -20,6 +20,17 @@ function Test-ModuleSatisfies
 
     process
     {
-        return $Module -eq $Spec.Name
+        if ($Module.Name -ne $Spec.Name)
+        {
+            return $false
+        }
+
+        if ($Spec.RequiredVersion -and $Module.Version -ne $Spec.RequiredVersion)
+        {
+            return $false
+        }
+
+
+        return $true
     }
 }
