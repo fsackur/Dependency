@@ -4,9 +4,11 @@ using namespace System.Collections.Generic
 
 class DependencyModule
 {
+    #region Constructors and type converters
     DependencyModule ([string]$Name)
     {
         $this.Name = $Name
+        $this.RequiredModules = [List[ModuleSpecification]]::new()
     }
 
     DependencyModule ([string]$Name, [version]$Version, [IList[ModuleSpecification]]$RequiredModules)
@@ -16,35 +18,62 @@ class DependencyModule
         $this.RequiredModules = [List[ModuleSpecification]]::new($RequiredModules)
     }
 
+    # Type converter from hashtable
     DependencyModule ([IDictionary]$Properties)
     {
-        # Type converter from hashtables
-        $this.PSObject.Properties | ForEach-Object {
-            $_.Value = $Properties[$_.Name]
+        $this.InitializeFrom([pscustomobject]$Properties)
+    }
+
+    # Type converter from PSModuleInfo
+    DependencyModule ([psmoduleinfo]$PSModule)
+    {
+        $this.InitializeFrom(($PSModule | Select-Object * -ExcludeProperty RequiredModules))
+
+        if ($PSModule.RequiredModules)
+        {
+            $Psd1 = Get-Content $PSModule.Path -Raw | Invoke-Expression
+            $Psd1.RequiredModules | ForEach-Object {
+                $this.RequiredModules.Add($_)
+            }
         }
     }
 
+    # Type converter from PSCustomObject, including output from Find-Module
     DependencyModule ([psobject]$InputObject)
     {
-        # Type converter from psobject
-        $this.PSObject.Properties | ForEach-Object {
-            $_.Value = $InputObject.$($_.Name)
-        }
+        $this.InitializeFrom($InputObject)
 
-        if ($InputObject.PSTypeNames -contains 'Microsoft.PowerShell.Commands.PSRepositoryItemInfo')
+        if ($InputObject.PSTypeNames -match '\bPSRepositoryItemInfo$')
         {
-            $this.RequiredModules = [List[ModuleSpecification]]::new($InputObject.Dependencies.Count)
             $InputObject.Dependencies | ForEach-Object {
                 $Spec = @{}
                 $Spec.ModuleName = $_.Name
                 if ($_.MinimumVersion)  {$Spec.ModuleVersion = $_.MinimumVersion}
                 if ($_.RequiredVersion) {$Spec.RequiredVersion = $_.RequiredVersion}
                 if ($_.MaximumVersion)  {$Spec.MaximumVersion = $_.MaximumVersion}
+
                 $this.RequiredModules.Add($Spec)
             }
         }
     }
 
+    # Helper
+    [void] InitializeFrom([psobject]$InputObject)
+    {
+        $this.PSObject.Properties |
+            Where-Object {$_.Name -ne 'RequiredModules'} |
+            ForEach-Object {
+                $_.Value = $InputObject.$($_.Name)
+            }
+
+        $this.RequiredModules = [List[ModuleSpecification]]::new()
+        $InputObject.RequiredModules | ForEach-Object {
+            $this.RequiredModules.Add($_)
+        }
+    }
+    #endregion Constructors and type converters
+
+    # Properties
     [ValidateNotNullOrEmpty()][string]$Name
     [version]$Version
     [IList[ModuleSpecification]]$RequiredModules
