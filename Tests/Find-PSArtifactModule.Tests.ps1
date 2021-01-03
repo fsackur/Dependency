@@ -12,7 +12,7 @@ BeforeAll {
 Describe "Find-PSArtifactModule" {
 
     BeforeAll {
-        Mock Find-Module -ParameterFilter {$Name -eq $Spec.Name} -ModuleName Dependency {
+        Mock Find-Module -ParameterFilter {$Name -eq $Spec.Name; $Repository -eq $MockRepository} -ModuleName Dependency {
             $MockFoo = Import-Clixml $PSScriptRoot/PSArtifactModule.TestData.clixml
             return $MockFoo
         }
@@ -20,7 +20,8 @@ Describe "Find-PSArtifactModule" {
 
     BeforeEach {
         $Spec = [ModuleSpecification]"foo"
-        $Result = Find-PSArtifactModule $Spec
+        $MockRepository = "MockGallery"
+        $Result = Find-PSArtifactModule $Spec -Repository $MockRepository
     }
 
     It "Finds foo" {
@@ -29,5 +30,9 @@ Describe "Find-PSArtifactModule" {
 
     It "Finds only foo" {
         $Result | Where-Object {$_.Name -ne $Spec.Name} | Should -BeNullOrEmpty
+    }
+
+    It "Lets you choose the repository" {
+        Assert-MockCalled Find-Module -ParameterFilter {$Name -eq $Spec.Name; $Repository -eq $MockRepository} -ModuleName Dependency
     }
 }

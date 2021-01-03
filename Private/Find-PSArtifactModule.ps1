@@ -8,6 +8,9 @@ function Find-PSArtifactModule
     [CmdletBinding()]
     param
     (
+        [Parameter()]
+        [string[]]$Repository = "PSGallery",
+
         [Parameter(Mandatory, Position=0)]
         [ModuleSpecification]$Spec
     )
@@ -21,6 +24,6 @@ function Find-PSArtifactModule
             MaximumVersion  = $Spec.MaximumVersion
         }
 
-        PowerShellGet\Find-Module @SpecSplat
+        PowerShellGet\Find-Module @SpecSplat -Repository $Repository
     }
 }
